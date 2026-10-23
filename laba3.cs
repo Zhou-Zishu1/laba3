@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
 namespace TextTokenizer
 {
-    // Базовые сущности для токенизации текста
     [XmlInclude(typeof(Word))]
     [XmlInclude(typeof(Punctuation))]
     public abstract class Token
@@ -50,5 +52,58 @@ namespace TextTokenizer
     {
         [XmlElement("sentence")]
         public List<Sentence> Sentences { get; set; } = new List<Sentence>();
+    }
+
+    // --- НОВОЕ В ЭТОМ КОММИТЕ: Логика обработки текста ---
+    public static class TextParser
+    {
+        public static Text Parse(string rawText)
+        {
+            var textObj = new Text();
+            var rawSentences = Regex.Split(rawText, @"(?<=[.!?])\s+");
+
+            foreach (var rawSentence in rawSentences)
+            {
+                if (string.IsNullOrWhiteSpace(rawSentence)) continue;
+                var sentence = new Sentence();
+                var matches = Regex.Matches(rawSentence, @"(\w+|[^\w\s]+|\s+)");
+
+                foreach (Match match in matches)
+                {
+                    string val = match.Value;
+                    if (Regex.IsMatch(val, @"^\w+$"))
+                        sentence.Tokens.Add(new Word(val));
+                    else
+                        sentence.Tokens.Add(new Punctuation(val));
+                }
+                textObj.Sentences.Add(sentence);
+            }
+            return textObj;
+        }
+    }
+
+    public static class TextProcessor
+    {
+        public static List<Sentence> SortByWordCount(Text text) =>
+            text.Sentences.OrderBy(s => s.Words.Count).ToList();
+
+        public static HashSet<string> FindWordsInQuestions(Text text, int length)
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var s in text.Sentences.Where(s => s.IsQuestion))
+            {
+                foreach (var w in s.Words.Where(w => w.Length == length))
+                    result.Add(w.Value);
+            }
+            return result;
+        }
+
+        public static void RemoveStopWords(Text text, HashSet<string> stopWords)
+        {
+            foreach (var s in text.Sentences)
+            {
+                s.Tokens.RemoveAll(t => t is Word w && stopWords.Contains(w.Value.ToLower()));
+            }
+        }
     }
 }
