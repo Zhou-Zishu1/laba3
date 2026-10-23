@@ -54,7 +54,6 @@ namespace TextTokenizer
         public List<Sentence> Sentences { get; set; } = new List<Sentence>();
     }
 
-    // --- НОВОЕ В ЭТОМ КОММИТЕ: Логика обработки текста ---
     public static class TextParser
     {
         public static Text Parse(string rawText)
@@ -104,6 +103,52 @@ namespace TextTokenizer
             {
                 s.Tokens.RemoveAll(t => t is Word w && stopWords.Contains(w.Value.ToLower()));
             }
+        }
+    }
+
+    // --- НОВОЕ В ЭТОМ КОММИТЕ: Запуск программы и сериализация ---
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            HashSet<string> stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string stopWordsPath = "stopwords_ru.txt";
+            
+            if (File.Exists(stopWordsPath))
+            {
+                foreach (var line in File.ReadLines(stopWordsPath))
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                        stopWords.Add(line.Trim().ToLower());
+                }
+            }
+
+            string sampleText = "Привет мир! Это текст учебника по программированию? " +
+                                "Мы пишем код лабораторной работы номер три.";
+
+            Text text = TextParser.Parse(sampleText);
+
+            Console.WriteLine("--- Исходный текст ---");
+            text.Sentences.ForEach(s => Console.WriteLine(s));
+
+            Console.WriteLine("\n--- 1. Сортировка по числу слов ---");
+            var sortedByWords = TextProcessor.SortByWordCount(text);
+            sortedByWords.ForEach(s => Console.WriteLine($"{s.Words.Count} слов: {s.ToString().Trim()}"));
+
+            Console.WriteLine("\n--- 3. Words с длиной 5 в вопросах ---");
+            var words = TextProcessor.FindWordsInQuestions(text, 5);
+            Console.WriteLine(string.Join(", ", words));
+
+            Console.WriteLine("\n--- 6. После удаления стоп-слов ---");
+            TextProcessor.RemoveStopWords(text, stopWords);
+            text.Sentences.ForEach(s => Console.WriteLine(s));
+
+            XmlSerializer serializer = new XmlSerializer(typeof(Text));
+            using (StreamWriter writer = new StreamWriter("output.xml"))
+            {
+                serializer.Serialize(writer, text);
+            }
+            Console.WriteLine("\n--- 7. Экспорт в XML завершен в файл output.xml ---");
         }
     }
 }
