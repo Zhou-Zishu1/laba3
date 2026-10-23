@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<text xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <sentence>
+    <Word>Привет</Word>
+    <Punctuation> </Punctuation>
+    <Word>мир</Word>
+    <Punctuation>!</Punctuation>
+  </sentence>
+  <sentence>
+    <Punctuation> </Punctuation>
+    <Word>текст</Word>
+    <Punctuation> </Punctuation>
+    <Word>учебника</Word>
+    <Punctuation> </Punctuation>
+    <Punctuation> </Punctuation>
+    <Word>программированию</Word>
+    <Punctuation>?</Punctuation>
+  </sentence>
+  <sentence>
+    <Punctuation> </Punctuation>
+    <Word>пишем</Word>
+    <Punctuation> </Punctuation>
+    <Word>код</Word>
+    <Punctuation> </Punctuation>
+    <Word>лабораторной</Word>
+    <Punctuation> </Punctuation>
+    <Word>работы</Word>
+    <Punctuation> </Punctuation>
+    <Word>номер</Word>
+    <Punctuation> </Punctuation>
+    <Punctuation>.</Punctuation>
+  </sentence>
+</text>

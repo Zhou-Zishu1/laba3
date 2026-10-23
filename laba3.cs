@@ -106,49 +106,75 @@ namespace TextTokenizer
         }
     }
 
-    // --- НОВОЕ В ЭТОМ КОММИТЕ: Запуск программы и сериализация ---
+    public static class TextPresenter
+    {
+        public static HashSet<string> LoadStopWords(string path)
+        {
+            var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (!File.Exists(path)) return stopWords;
+
+            foreach (var line in File.ReadLines(path))
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                    stopWords.Add(line.Trim().ToLower());
+            }
+            return stopWords;
+        }
+
+        public static void PrintOriginal(Text text)
+        {
+            Console.WriteLine("--- Исходный текст ---");
+            text.Sentences.ForEach(s => Console.WriteLine(s));
+        }
+
+        public static void PrintSortedByWords(Text text)
+        {
+            Console.WriteLine("\n--- 1. Сортировка по числу слов ---");
+            var sorted = TextProcessor.SortByWordCount(text);
+            sorted.ForEach(s => Console.WriteLine($"{s.Words.Count} слов: {s.ToString().Trim()}"));
+        }
+
+        public static void PrintQuestionWords(Text text, int length)
+        {
+            Console.WriteLine($"\n--- 3. Слова с длиной {length} в вопросах ---");
+            var words = TextProcessor.FindWordsInQuestions(text, length);
+            Console.WriteLine(string.Join(", ", words));
+        }
+
+        public static void PrintAfterFilter(Text text)
+        {
+            Console.WriteLine("\n--- 6. После удаления стоп-слов ---");
+            text.Sentences.ForEach(s => Console.WriteLine(s));
+        }
+
+        public static void ExportToXml(Text text, string path)
+        {
+            var serializer = new XmlSerializer(typeof(Text));
+            using (var writer = new StreamWriter(path))
+            {
+                serializer.Serialize(writer, text);
+            }
+            Console.WriteLine($"\n--- 7. Экспорт в XML завершен в файл {path} ---");
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            HashSet<string> stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            string stopWordsPath = "stopwords_ru.txt";
-            
-            if (File.Exists(stopWordsPath))
-            {
-                foreach (var line in File.ReadLines(stopWordsPath))
-                {
-                    if (!string.IsNullOrWhiteSpace(line))
-                        stopWords.Add(line.Trim().ToLower());
-                }
-            }
-
             string sampleText = "Привет мир! Это текст учебника по программированию? " +
                                 "Мы пишем код лабораторной работы номер три.";
 
-            Text text = TextParser.Parse(sampleText);
+            var stopWords = TextPresenter.LoadStopWords("stopwords_ru.txt");
+            var text = TextParser.Parse(sampleText);
 
-            Console.WriteLine("--- Исходный текст ---");
-            text.Sentences.ForEach(s => Console.WriteLine(s));
+            TextPresenter.PrintOriginal(text);
+            TextPresenter.PrintSortedByWords(text);
+            TextPresenter.PrintQuestionWords(text, length: 5);
 
-            Console.WriteLine("\n--- 1. Сортировка по числу слов ---");
-            var sortedByWords = TextProcessor.SortByWordCount(text);
-            sortedByWords.ForEach(s => Console.WriteLine($"{s.Words.Count} слов: {s.ToString().Trim()}"));
-
-            Console.WriteLine("\n--- 3. Words с длиной 5 в вопросах ---");
-            var words = TextProcessor.FindWordsInQuestions(text, 5);
-            Console.WriteLine(string.Join(", ", words));
-
-            Console.WriteLine("\n--- 6. После удаления стоп-слов ---");
             TextProcessor.RemoveStopWords(text, stopWords);
-            text.Sentences.ForEach(s => Console.WriteLine(s));
-
-            XmlSerializer serializer = new XmlSerializer(typeof(Text));
-            using (StreamWriter writer = new StreamWriter("output.xml"))
-            {
-                serializer.Serialize(writer, text);
-            }
-            Console.WriteLine("\n--- 7. Экспорт в XML завершен в файл output.xml ---");
+            TextPresenter.PrintAfterFilter(text);
+            TextPresenter.ExportToXml(text, "output.xml");
         }
     }
 }
