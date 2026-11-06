@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
 namespace TextTokenizer
@@ -11,7 +12,7 @@ namespace TextTokenizer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Репозиторий инициализирован.");
+            Console.WriteLine("Parser added successfully.");
             Console.ReadLine();
         }
     }
@@ -88,5 +89,37 @@ namespace TextTokenizer
     {
         [XmlElement("sentence")]
         public List<Sentence> Sentences { get; set; } = new List<Sentence>();
+    }
+
+    public static class TextParser
+    {
+        public static Text Parse(string rawText)
+        {
+            var textObj = new Text();
+            if (string.IsNullOrWhiteSpace(rawText)) return textObj;
+
+            var sentenceMatches = Regex.Split(rawText, @"(?<=[.!?])\s+");
+
+            foreach (var sStr in sentenceMatches)
+            {
+                if (string.IsNullOrWhiteSpace(sStr)) continue;
+
+                var sentence = new Sentence();
+                var tokens = Regex.Matches(sStr, @"[a-zA-Z0-9а-яА-ЯёЁ]+|[^\w\s]+");
+
+                foreach (Match match in tokens)
+                {
+                    string val = match.Value;
+                    if (string.IsNullOrEmpty(val)) continue;
+
+                    if (char.IsLetterOrDigit(val[0]))
+                        sentence.Tokens.Add(new Word(val));
+                    else
+                        sentence.Tokens.Add(new Punctuation(val));
+                }
+                textObj.Sentences.Add(sentence);
+            }
+            return textObj;
+        }
     }
 }
