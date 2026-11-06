@@ -23,7 +23,7 @@ namespace TextTokenizer
         public static void RunApp(string textFile, string stopWordsFile, string xmlOutputFile)
         {
             if (!File.Exists(textFile)) 
-                File.WriteAllText(textFile, "Hello world! Is this a good sample text?! Yes, it absolutely is... Мама мыла красивую раму с мылом.");
+                File.WriteAllText(textFile, "Winter is near! Is this your best time?! Yes, it absolutely is... Зима приходит, осень выходит, жду снег.");
             if (!File.Exists(stopWordsFile)) 
                 File.WriteAllText(stopWordsFile, "с\nа\nit\nis");
 
@@ -37,6 +37,10 @@ namespace TextTokenizer
             TextProcessor.PrintByWordCount(text);
             TextProcessor.PrintByLength(text);
             TextProcessor.FindWordsInQuestions(text, 4);
+
+            var concordance = TextProcessor.BuildConcordance(text);
+            TextProcessor.PrintConcordance(concordance);
+
 
             if (text.Sentences.Any())
                 TextProcessor.ReplaceWordsInSentence(text.Sentences.First(), 4, "[REPLACED]"); 
@@ -67,6 +71,13 @@ namespace TextTokenizer
         public Punctuation() { }
         public Punctuation(string value) => Value = value;
     }
+
+    public class ConcordanceEntry
+    {
+        public int Frequency { get; set; } = 0;
+        public SortedSet<int> Lines { get; } = new SortedSet<int>();
+    }
+
 
     public class XmlWordSurrogate
     {
@@ -234,5 +245,40 @@ namespace TextTokenizer
             }
             Console.WriteLine($"\n--- 7. XML Output Successfully Saved to: {filePath} ---");
         }
+
+        public static SortedDictionary<string, ConcordanceEntry> BuildConcordance(Text text)
+        {
+            var concordance = new SortedDictionary<string, ConcordanceEntry>();
+            if (text?.Sentences == null) return concordance;
+
+            for (int i = 0; i < text.Sentences.Count; i++)
+            {
+                int lineNumber = i + 1;
+                foreach (var wordToken in text.Sentences[i].Words)
+                {
+                    if (string.IsNullOrWhiteSpace(wordToken.Value)) continue;
+                    string cleanWord = wordToken.Value.ToLower();
+
+                    if (!concordance.ContainsKey(cleanWord))
+                    concordance[cleanWord] = new ConcordanceEntry();
+
+                    concordance[cleanWord].Frequency++;
+                    concordance[cleanWord].Lines.Add(lineNumber);
+                }
+            }
+        return concordance;
+        }
+
+        public static void PrintConcordance(SortedDictionary<string, ConcordanceEntry> concordance)
+        {
+            Console.WriteLine("\n--- 8. Concordance (Alphabetical Word Index) ---");
+            foreach (var entry in concordance)
+                {
+                    string wordStr = entry.Key;
+                    string statsStr = $"{entry.Value.Frequency}: {string.Join(" ", entry.Value.Lines)}";
+                    Console.WriteLine($"{wordStr.PadRight(40, '.')}{statsStr}");
+                }
+        }
+
     }
 }
