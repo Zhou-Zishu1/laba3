@@ -12,7 +12,7 @@ namespace TextTokenizer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Parser added successfully.");
+            Console.WriteLine("Text algorithms added successfully.");
             Console.ReadLine();
         }
     }
@@ -120,6 +120,69 @@ namespace TextTokenizer
                 textObj.Sentences.Add(sentence);
             }
             return textObj;
+        }
+    }
+
+    public static class TextProcessor
+    {
+        public static void PrintByWordCount(Text text)
+        {
+            Console.WriteLine("--- 1. Sorted by Word Count ---");
+            var sorted = text.Sentences.OrderBy(s => s.Words.Count);
+            foreach (var s in sorted) Console.WriteLine($"[{s.Words.Count} words]: {s}");
+        }
+
+        public static void PrintByLength(Text text)
+        {
+            Console.WriteLine("\n--- 2. Sorted by Sentence Length ---");
+            var sorted = text.Sentences.OrderBy(s => s.ToString().Length);
+            foreach (var s in sorted) Console.WriteLine($"[{s.ToString().Length} chars]: {s}");
+        }
+
+        public static void FindWordsInQuestions(Text text, int length)
+        {
+            Console.WriteLine($"\n--- 3. Unique Words of Length {length} in Interrogative Sentences ---");
+            var words = text.Sentences
+                .Where(s => s.IsQuestion)
+                .SelectMany(s => s.Words)
+                .Where(w => !string.IsNullOrEmpty(w.Value) && w.Value.Length == length)
+                .Select(w => w.Value.ToLower())
+                .Distinct();
+            Console.WriteLine(words.Any() ? string.Join(", ", words) : "No matching words found.");
+        }
+
+        public static void RemoveWordsStartingWithConsonant(Text text, int length)
+        {
+            string consonants = "bcdfghjklmnpqrstvwxyzбвгджзйклмнпрстфхцчшщ";
+            foreach (var s in text.Sentences)
+            {
+                s.Tokens.RemoveAll(t => t is Word w && 
+                                        !string.IsNullOrEmpty(w.Value) && 
+                                        w.Value.Length == length && 
+                                        consonants.Contains(char.ToLower(w.Value[0])));
+            }
+            text.Sentences.RemoveAll(s => !s.Words.Any());
+            Console.WriteLine($"\n--- 4. Words of Length {length} Starting with Consonant Removed ---");
+        }
+
+        public static void ReplaceWordsInSentence(Sentence sentence, int length, string subStr)
+        {
+            if (sentence == null) return;
+            foreach (var token in sentence.Tokens.OfType<Word>().Where(w => !string.IsNullOrEmpty(w.Value) && w.Value.Length == length))
+            {
+                token.Value = subStr;
+            }
+            Console.WriteLine($"\n--- 5. Words of Length {length} Replaced with '{subStr}' in the Sentence ---");
+        }
+
+        public static void RemoveStopWords(Text text, HashSet<string> stopWords)
+        {
+            foreach (var s in text.Sentences)
+            {
+                s.Tokens.RemoveAll(t => t is Word w && !string.IsNullOrEmpty(w.Value) && stopWords.Contains(w.Value.ToLower()));
+            }
+            text.Sentences.RemoveAll(s => !s.Words.Any());
+            Console.WriteLine("\n--- 6. Stop Words Successfully Removed ---");
         }
     }
 }
