@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace TextTokenizer
@@ -12,8 +13,41 @@ namespace TextTokenizer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Text algorithms added successfully.");
+            TextAppRunner.RunApp("input.txt", "stopwords.txt", "output.xml");
             Console.ReadLine();
+        }
+    }
+
+    public static class TextAppRunner
+    {
+        public static void RunApp(string textFile, string stopWordsFile, string xmlOutputFile)
+        {
+            if (!File.Exists(textFile)) 
+                File.WriteAllText(textFile, "Hello world! Is this a good sample text?! Yes, it absolutely is... Мама мыла красивую раму с мылом.");
+            if (!File.Exists(stopWordsFile)) 
+                File.WriteAllText(stopWordsFile, "с\nа\nit\nis");
+
+            string sourceText = File.ReadAllText(textFile);
+            var stopWords = new HashSet<string>(File.ReadAllLines(stopWordsFile).Select(w => w.Trim().ToLower()));
+
+            Console.WriteLine($"--- Source Text from File '{textFile}': ---\n{sourceText}\n");
+
+            Text text = TextParser.Parse(sourceText);
+
+            TextProcessor.PrintByWordCount(text);
+            TextProcessor.PrintByLength(text);
+            TextProcessor.FindWordsInQuestions(text, 4);
+
+            if (text.Sentences.Any())
+                TextProcessor.ReplaceWordsInSentence(text.Sentences.First(), 4, "[REPLACED]"); 
+
+            TextProcessor.RemoveWordsStartingWithConsonant(text, 5);
+            TextProcessor.RemoveStopWords(text, stopWords);
+
+            Console.WriteLine("\n--- Text After All Structural Modifications: ---");
+            foreach (var s in text.Sentences) Console.WriteLine(s);
+
+            TextProcessor.ExportToXml(text, xmlOutputFile);
         }
     }
 
@@ -183,6 +217,22 @@ namespace TextTokenizer
             }
             text.Sentences.RemoveAll(s => !s.Words.Any());
             Console.WriteLine("\n--- 6. Stop Words Successfully Removed ---");
+        }
+
+        public static void ExportToXml(Text text, string filePath)
+        {
+            var serializer = new XmlSerializer(typeof(Text));
+            var settings = new XmlWriterSettings 
+            { 
+                Encoding = Encoding.UTF8, 
+                Indent = true 
+            };
+
+            using (var writer = XmlWriter.Create(filePath, settings))
+            {
+                serializer.Serialize(writer, text);
+            }
+            Console.WriteLine($"\n--- 7. XML Output Successfully Saved to: {filePath} ---");
         }
     }
 }
